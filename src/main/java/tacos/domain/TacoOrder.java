@@ -10,13 +10,17 @@ import javax.validation.constraints.Pattern;
 
 import lombok.Data;
 import org.hibernate.validator.constraints.CreditCardNumber;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
+@Table
 public class TacoOrder {
 
+    @Id
     private Long id;
 
-    private Date placedAt;
+    private Date placedAt = new Date();
 
     @NotBlank(message = "Delivery name is required")
     private String deliveryName;

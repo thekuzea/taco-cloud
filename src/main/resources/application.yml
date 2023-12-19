@@ -1,4 +1,4 @@
 spring:
-  datasource:
-    generate-unique-name: false
-    name: tacocloud
+  data:
+    mongodb:
+      database: tacoclouddb

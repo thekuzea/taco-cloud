@@ -2,17 +2,16 @@ package tacos.web.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import tacos.domain.User;
+import tacos.persistence.UserRepository;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
 @Configuration
 public class SecurityConfig {
@@ -23,20 +22,42 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsManager userDetailsManager(final PasswordEncoder passwordEncoder) {
-        final List<UserDetails> users = new ArrayList<>();
-        users.add(new User(
-                "buzz",
-                passwordEncoder.encode("password"),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-        ));
+    public UserDetailsService userDetailsManager(final UserRepository userRepository) {
+        return username -> {
+            final Optional<User> user = userRepository.findUserByUsername(username);
+            if (user.isPresent()) {
+                return user.get();
+            }
 
-        users.add(new User(
-                "woody",
-                passwordEncoder.encode("password"),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-        ));
+            throw new UsernameNotFoundException(String.format("User %s not found", username));
+        };
+    }
 
-        return new InMemoryUserDetailsManager(users);
+    @Bean
+    public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+        final HttpSecurity urlPermissions = http.authorizeRequests()
+                        .antMatchers("/design", "/orders")
+                        .hasRole("USER")
+                        .antMatchers("/", "/**")
+                        .permitAll()
+                        .and();
+
+        final HttpSecurity authentication = urlPermissions.formLogin()
+                .loginPage("/login")
+                // specify URL which Spring Security should listen, to handle login submissions
+                .loginProcessingUrl("/authenticate")
+                // change default username expected field name on login page
+                .usernameParameter("usr")
+                // change default password expected field name on login page
+                .passwordParameter("pwd")
+                // specify URL redirect to, when user successfully authenticated. 2-nd parameter forces redirection
+                .defaultSuccessUrl("/design", true)
+                .and()
+                .logout()
+                // once user is logged out redirect on login page
+                .logoutSuccessUrl("/login")
+                .and();
+
+        return authentication.build();
     }
 }

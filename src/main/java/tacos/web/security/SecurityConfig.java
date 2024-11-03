@@ -35,28 +35,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
-        final HttpSecurity urlPermissions = http.authorizeRequests()
-                        .antMatchers("/design", "/orders")
-                        .hasRole("USER")
-                        .antMatchers("/", "/**")
-                        .permitAll()
-                        .and();
+        final HttpSecurity urlPermissions = http
+                .authorizeHttpRequests(a -> a.requestMatchers("/design", "/orders").hasRole("USER"))
+                .authorizeHttpRequests(a -> a.requestMatchers("/", "/**").permitAll());
 
-        final HttpSecurity authentication = urlPermissions.formLogin()
-                .loginPage("/login")
-                // specify URL which Spring Security should listen, to handle login submissions
-                .loginProcessingUrl("/authenticate")
-                // change default username expected field name on login page
-                .usernameParameter("usr")
-                // change default password expected field name on login page
-                .passwordParameter("pwd")
-                // specify URL redirect to, when user successfully authenticated. 2-nd parameter forces redirection
-                .defaultSuccessUrl("/design", true)
-                .and()
-                .logout()
+        final HttpSecurity authentication = urlPermissions.formLogin(
+                        customizer -> customizer
+                                .loginPage("/login")
+                                // specify URL which Spring Security should listen, to handle login submissions
+                                .loginProcessingUrl("/authenticate")
+                                // change default username expected field name on login page
+                                .usernameParameter("usr")
+                                // change default password expected field name on login page
+                                .passwordParameter("pwd")
+                                // specify URL redirect to, when user successfully authenticated. 2-nd parameter forces redirection
+                                .defaultSuccessUrl("/design", true)
+                )
                 // once user is logged out redirect on login page
-                .logoutSuccessUrl("/login")
-                .and();
+                .logout(customizer -> customizer.logoutSuccessUrl("/login"));
 
         return authentication.build();
     }

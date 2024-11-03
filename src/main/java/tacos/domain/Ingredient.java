@@ -1,7 +1,7 @@
 package tacos.domain;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
